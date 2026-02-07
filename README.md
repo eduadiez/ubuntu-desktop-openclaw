@@ -58,9 +58,9 @@ docker run -d \
 ```bash
 docker run -d \
   --name mate-desktop-openclaw \
-  -p 6080:6080 \
-  -p 5900:5900 \
-  -p 18789:18789 \
+  -p 127.0.0.1:6080:6080 \
+  -p 127.0.0.1:5900:5900 \
+  -p 127.0.0.1:18789:18789 \
   -v mate-desktop-home-openclaw:/home/desktop \
   -e VNC_PASSWORD=dappnode \
   --shm-size=2gb \
