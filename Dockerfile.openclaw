@@ -1,0 +1,139 @@
+# OpenClaw Development Variant
+# Extends the base MATE Desktop image with Node.js and OpenClaw tools
+# Node.js is installed at runtime in /home/desktop so it persists with the volume
+
+# Use the base image from Docker Hub or build locally first
+# For local builds: docker build -t mate-desktop-base:latest .
+# For CI/CD: pulls from eduadiez/mate-desktop:latest
+ARG BASE_IMAGE=mate-desktop-base:latest
+FROM ${BASE_IMAGE}
+
+# Install build tools needed for Node.js native modules, Homebrew, and supervisord
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3 \
+    supervisor \
+    curl \
+    file \
+    git \
+    procps \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create setup script that will install NVM/Node on first run
+RUN cat > /usr/local/bin/setup-nodejs.sh << 'EOF'
+#!/bin/bash
+set -e
+
+USER_HOME=/home/desktop
+NVM_DIR="${USER_HOME}/.nvm"
+NODE_VERSION=node
+
+# Check if NVM is already installed
+if [ -d "${NVM_DIR}" ] && [ -s "${NVM_DIR}/nvm.sh" ]; then
+    echo "[openclaw] NVM already installed, skipping setup"
+    exit 0
+fi
+
+echo "[openclaw] Installing NVM and Node.js (first run only)..."
+
+# Switch to desktop user and run all commands in their context
+cd "${USER_HOME}"
+
+# Install NVM as desktop user
+sudo -u desktop bash << 'INNEREOF'
+export HOME=/home/desktop
+export NVM_DIR="$HOME/.nvm"
+
+# Download and install NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# Load NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Install Node.js
+nvm install node
+nvm alias default node
+nvm use default
+
+# Install global packages
+npm install -g yarn pnpm typescript ts-node nodemon
+
+# Install Homebrew (Linuxbrew)
+echo "[openclaw] Installing Homebrew..."
+export NONINTERACTIVE=1
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || echo "[openclaw] Homebrew installation skipped"
+
+# Add Homebrew to PATH
+if [ -d "/home/linuxbrew/.linuxbrew" ]; then
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "$HOME/.bashrc"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    echo "[openclaw] Homebrew installed successfully"
+    brew --version
+fi
+
+# Try to install openclaw
+if npm install -g openclaw 2>/dev/null; then
+    echo "[openclaw] OpenClaw installed, running onboarding..."
+    openclaw onboard --non-interactive --accept-risk 2>/dev/null || echo "[openclaw] Onboarding completed or skipped"
+else
+    echo "[openclaw] OpenClaw installation skipped"
+fi
+
+echo "[openclaw] Setup complete!"
+node --version
+npm --version
+INNEREOF
+
+# Ensure proper ownership
+chown -R desktop:desktop "${NVM_DIR}" 2>/dev/null || true
+
+echo "[openclaw] ✓ Setup complete. NVM and Node.js are now available."
+EOF
+
+RUN chmod +x /usr/local/bin/setup-nodejs.sh
+
+# Add NVM and Homebrew to system-wide profile so they're always available
+RUN echo '# Load NVM if installed in user home' >> /etc/profile.d/dev-tools.sh \
+    && echo 'if [ -d "$HOME/.nvm" ]; then' >> /etc/profile.d/dev-tools.sh \
+    && echo '  export NVM_DIR="$HOME/.nvm"' >> /etc/profile.d/dev-tools.sh \
+    && echo '  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> /etc/profile.d/dev-tools.sh \
+    && echo 'fi' >> /etc/profile.d/dev-tools.sh \
+    && echo '' >> /etc/profile.d/dev-tools.sh \
+    && echo '# Load Homebrew if installed' >> /etc/profile.d/dev-tools.sh \
+    && echo 'if [ -d "/home/linuxbrew/.linuxbrew" ]; then' >> /etc/profile.d/dev-tools.sh \
+    && echo '  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /etc/profile.d/dev-tools.sh \
+    && echo 'fi' >> /etc/profile.d/dev-tools.sh \
+    && chmod +x /etc/profile.d/dev-tools.sh
+
+# Also add to /etc/bash.bashrc for non-login shells
+RUN echo '' >> /etc/bash.bashrc \
+    && echo '# Load NVM if installed in user home' >> /etc/bash.bashrc \
+    && echo 'if [ -d "$HOME/.nvm" ]; then' >> /etc/bash.bashrc \
+    && echo '  export NVM_DIR="$HOME/.nvm"' >> /etc/bash.bashrc \
+    && echo '  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> /etc/bash.bashrc \
+    && echo 'fi' >> /etc/bash.bashrc \
+    && echo '' >> /etc/bash.bashrc \
+    && echo '# Load Homebrew if installed' >> /etc/bash.bashrc \
+    && echo 'if [ -d "/home/linuxbrew/.linuxbrew" ]; then' >> /etc/bash.bashrc \
+    && echo '  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /etc/bash.bashrc \
+    && echo 'fi' >> /etc/bash.bashrc
+
+# Copy supervisord configuration
+COPY config/supervisord.openclaw.conf /etc/supervisor/conf.d/supervisord.openclaw.conf
+
+# Copy openclaw-specific startup script
+COPY scripts/startup-openclaw.sh /opt/startup-openclaw.sh
+RUN sed -i 's/\r$//' /opt/startup-openclaw.sh && chmod +x /opt/startup-openclaw.sh
+
+# Copy OpenClaw dashboard launcher script
+COPY scripts/openclaw-dashboard.sh /opt/openclaw-dashboard.sh
+RUN sed -i 's/\r$//' /opt/openclaw-dashboard.sh && chmod +x /opt/openclaw-dashboard.sh
+
+# Expose OpenClaw Gateway port
+EXPOSE 18789
+
+# Override ENTRYPOINT to use openclaw startup script with supervisord
+ENTRYPOINT ["/opt/startup-openclaw.sh"]

@@ -1,0 +1,49 @@
+# Configuration with shared folders between host and container
+services:
+  mate-desktop:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: mate-desktop
+    hostname: mate-desktop
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6080:6080"
+      - "127.0.0.1:5900:5900"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD:-dappnode}
+      - VNC_RESOLUTION=1920x1080
+      - VNC_COL_DEPTH=24
+      - TZ=${TZ:-UTC}
+    volumes:
+      # Persistent home directory
+      - desktop-home:/home/desktop
+
+      # Shared folders (create these on host first)
+      - ./shared/downloads:/home/desktop/Downloads:rw
+      - ./shared/documents:/home/desktop/Documents:rw
+      - ./shared/projects:/home/desktop/Projects:rw
+
+      # Read-only shared folder
+      - ./shared/reference:/home/desktop/Reference:ro
+
+      # Optional: Share host's Docker socket (use with caution)
+      # - /var/run/docker.sock:/var/run/docker.sock
+    shm_size: "2gb"
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "websockify"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  desktop-home:
+    name: mate-desktop-home
+
+# Before starting:
+# mkdir -p shared/{downloads,documents,projects,reference}
+# sudo chown -R 1000:1000 shared/  # Match container user UID:GID
+#
+# Start with:
+# docker compose -f docker-compose.with-file-sharing.yml up -d

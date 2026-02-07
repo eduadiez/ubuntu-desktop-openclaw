@@ -1,0 +1,61 @@
+[Layout]
+toplevel-id-list=top-panel
+object-id-list=brisk-menu;clock;show-desktop;window-list;workspace-switcher;trash;notification-area
+
+[Toplevel top-panel]
+expand=true
+orientation=top
+size=28
+
+[Object brisk-menu]
+object-type=applet
+applet-iid=BriskMenuFactory::BriskMenu
+toplevel-id=top-panel
+position=0
+locked=true
+
+[Object clock]
+object-type=applet
+applet-iid=ClockAppletFactory::ClockApplet
+toplevel-id=top-panel
+position=10
+panel-right-stick=true
+locked=true
+
+[Object notification-area]
+object-type=applet
+applet-iid=NotificationAreaAppletFactory::NotificationArea
+toplevel-id=top-panel
+position=20
+panel-right-stick=true
+locked=true
+
+[Object show-desktop]
+object-type=applet
+applet-iid=WnckletFactory::ShowDesktopApplet
+toplevel-id=top-panel
+position=100
+locked=true
+
+[Object window-list]
+object-type=applet
+applet-iid=WnckletFactory::WindowListApplet
+toplevel-id=top-panel
+position=200
+locked=true
+
+[Object workspace-switcher]
+object-type=applet
+applet-iid=WnckletFactory::WorkspaceSwitcherApplet
+toplevel-id=top-panel
+position=10
+panel-right-stick=true
+locked=true
+
+[Object trash]
+object-type=applet
+applet-iid=TrashAppletFactory::TrashApplet
+toplevel-id=top-panel
+position=30
+panel-right-stick=true
+locked=true

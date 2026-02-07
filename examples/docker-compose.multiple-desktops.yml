@@ -1,0 +1,90 @@
+# Run multiple isolated desktop instances on different ports
+services:
+  mate-desktop-1:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: mate-desktop-1
+    hostname: desktop-1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6081:6080"   # First desktop on port 6081
+      - "127.0.0.1:5901:5900"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD_1:-desktop1}
+      - VNC_RESOLUTION=1920x1080
+      - VNC_COL_DEPTH=24
+      - TZ=UTC
+    volumes:
+      - desktop-home-1:/home/desktop
+    shm_size: "2gb"
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "websockify"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mate-desktop-2:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: mate-desktop-2
+    hostname: desktop-2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6082:6080"   # Second desktop on port 6082
+      - "127.0.0.1:5902:5900"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD_2:-desktop2}
+      - VNC_RESOLUTION=1920x1080
+      - VNC_COL_DEPTH=24
+      - TZ=UTC
+    volumes:
+      - desktop-home-2:/home/desktop
+    shm_size: "2gb"
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "websockify"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mate-desktop-3:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: mate-desktop-3
+    hostname: desktop-3
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6083:6080"   # Third desktop on port 6083
+      - "127.0.0.1:5903:5900"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD_3:-desktop3}
+      - VNC_RESOLUTION=1280x720
+      - VNC_COL_DEPTH=24
+      - TZ=UTC
+    volumes:
+      - desktop-home-3:/home/desktop
+    shm_size: "2gb"
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "websockify"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  desktop-home-1:
+    name: mate-desktop-home-1
+  desktop-home-2:
+    name: mate-desktop-home-2
+  desktop-home-3:
+    name: mate-desktop-home-3
+
+# Usage:
+# Access desktops at:
+#   - http://localhost:6081 (desktop-1)
+#   - http://localhost:6082 (desktop-2)
+#   - http://localhost:6083 (desktop-3)

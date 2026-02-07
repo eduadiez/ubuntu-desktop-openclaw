@@ -1,0 +1,53 @@
+# Development configuration with convenient settings for testing
+services:
+  mate-desktop:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      # Build with no cache for testing changes
+      # args:
+      #   BUILDKIT_INLINE_CACHE: 1
+    container_name: mate-desktop-dev
+    hostname: mate-desktop-dev
+    restart: "no"  # Don't auto-restart during development
+    ports:
+      - "127.0.0.1:6080:6080"
+      - "127.0.0.1:5900:5900"
+    environment:
+      - VNC_PASSWORD=dev
+      - VNC_RESOLUTION=1920x1080
+      - VNC_COL_DEPTH=24
+      - TZ=UTC
+      - DEBUG=1  # Custom env var for debugging (if supported)
+    volumes:
+      - desktop-home-dev:/home/desktop
+
+      # Mount scripts for live editing (development only)
+      - ../scripts:/opt/dev-scripts:ro
+    shm_size: "4gb"  # Extra memory for development
+
+    # Access to host resources (development only)
+    # privileged: true
+
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "websockify"]
+      interval: 15s  # More frequent checks for dev
+      timeout: 5s
+      retries: 2
+      start_period: 30s
+
+    # Verbose logging for development
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  desktop-home-dev:
+    name: mate-desktop-home-dev
+
+# Development commands:
+# docker compose -f docker-compose.development.yml build --no-cache
+# docker compose -f docker-compose.development.yml up
+# docker compose -f docker-compose.development.yml logs -f

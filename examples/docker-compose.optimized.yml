@@ -1,0 +1,65 @@
+# Optimized configuration with resource limits for server/remote deployments
+services:
+  mate-desktop:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: mate-desktop-optimized
+    hostname: mate-desktop-optimized
+    restart: unless-stopped
+    ports:
+      # Only expose on localhost, use reverse proxy or SSH tunnel for external access
+      - "127.0.0.1:6080:6080"
+      # Direct VNC disabled for security
+      # - "127.0.0.1:5900:5900"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD:-dappnode}
+      - VNC_RESOLUTION=${VNC_RESOLUTION:-1920x1080}
+      - VNC_COL_DEPTH=24
+      - TZ=${TZ:-UTC}
+    volumes:
+      - desktop-home:/home/desktop
+    shm_size: "2gb"
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'          # Maximum 2 CPU cores
+          memory: 4G           # Maximum 4GB RAM
+        reservations:
+          cpus: '0.5'          # Minimum 0.5 CPU cores
+          memory: 1G           # Minimum 1GB RAM
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Read-only root filesystem (some paths need to be writable)
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
+    #   - /var/tmp
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "websockify"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Network mode (optional)
+    # network_mode: "bridge"
+
+volumes:
+  desktop-home:
+    name: mate-desktop-home-optimized
+    driver: local

@@ -1,0 +1,47 @@
+# Docker Compose for OpenClaw Development Variant
+# Build base image first, then extends it with OpenClaw tools
+services:
+  mate-desktop-openclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+      args:
+        # This will use the base Dockerfile to build, then add OpenClaw on top
+        BASE_IMAGE: mate-desktop-base
+    image: mate-desktop:openclaw
+    container_name: mate-desktop-openclaw
+    hostname: mate-desktop-openclaw
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${NOVNC_PORT:-6080}:6080"
+      - "127.0.0.1:${VNC_PORT:-5900}:5900"
+      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789}:18789"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD:-dappnode}
+      - VNC_RESOLUTION=${VNC_RESOLUTION:-1920x1080}
+      - VNC_COL_DEPTH=${VNC_COL_DEPTH:-24}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - desktop-home-openclaw:/home/desktop
+      # Optional: Mount your projects directory
+      # - ./projects:/home/desktop/projects
+    shm_size: "2gb"
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "websockify"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Base image build (builds first)
+  mate-desktop-base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mate-desktop-base
+    profiles:
+      - build-only
+
+volumes:
+  desktop-home-openclaw:
+    name: mate-desktop-home-openclaw

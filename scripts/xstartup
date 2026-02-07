@@ -1,0 +1,24 @@
+#!/bin/bash
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+
+export XDG_SESSION_TYPE=x11
+export XDG_CURRENT_DESKTOP=MATE
+export DESKTOP_SESSION=mate
+
+# Start dbus session
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+    eval $(dbus-launch --sh-syntax --exit-with-session)
+    export DBUS_SESSION_BUS_ADDRESS
+fi
+
+# On first run, force our custom panel layout (no indicator applets)
+PANEL_INIT="${HOME}/.config/.panel-initialized"
+if [ ! -f "${PANEL_INIT}" ]; then
+    dconf reset -f /org/mate/panel/ 2>/dev/null || true
+    mkdir -p "${HOME}/.config"
+    touch "${PANEL_INIT}"
+fi
+
+# Start MATE session
+exec mate-session
