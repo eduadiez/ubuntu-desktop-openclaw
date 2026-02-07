@@ -66,8 +66,9 @@ docker build -f Dockerfile.openclaw -t mate-desktop:openclaw .
 
 # Run it
 docker run -d \
-  -p 6080:6080 \
-  -p 5900:5900 \
+  -p 127.0.0.1:6080:6080 \
+  -p 127.0.0.1:5900:5900 \
+  -p 127.0.0.1:18789:18789 \
   --name mate-desktop-openclaw \
   mate-desktop:openclaw
 ```
@@ -204,7 +205,9 @@ Or when using `docker run`:
 
 ```bash
 docker run -d \
-  -p 6080:6080 \
+  -p 127.0.0.1:6080:6080 \
+  -p 127.0.0.1:5900:5900 \
+  -p 127.0.0.1:18789:18789 \
   -v $(pwd)/my-projects:/home/desktop/projects \
   mate-desktop:openclaw
 ```
@@ -330,5 +333,5 @@ Your data is stored in separate volumes, so you can run both:
 docker compose up -d                # Port 6080
 
 # OpenClaw variant (change ports or stop base first)
-docker run -p 6081:6080 mate-desktop:openclaw  # Port 6081
+docker run -p 127.0.0.1:6081:6080 -p 127.0.0.1:5901:5900 -p 127.0.0.1:18790:18789 mate-desktop:openclaw
 ```
