@@ -1,0 +1,20 @@
+{
+  "name": "mate-desktop-openclaw.dnp.dappnode.eth",
+  "version": "0.1.0",
+  "shortDescription": "About Multi-architecture MATE Desktop in Docker with noVNC browser access, and openCLAW support",
+  "description": "Multi-architecture MATE Desktop in Docker with noVNC browser access. Includes persistent storage, Brave browser, and package management. OpenClaw variant adds Node.js development environment with NVM, TypeScript, and OpenClaw agent framework. Supports x86_64 and ARM64. Perfect for cloud development, testing, or remote work",
+  "type": "service",
+  "author": "edu",
+  "categories": [
+    "AI"
+  ],
+  "links": {
+    "ui": "http://mate-desktop-openclaw.dappnode:6080",
+    "repo": "https://github.com/eduadiez/ubuntu-desktop-openclaw"
+  },
+  "license": "GPL-3.0",
+  "architectures": [
+    "linux/amd64",
+    "linux/arm64"
+  ]
+}

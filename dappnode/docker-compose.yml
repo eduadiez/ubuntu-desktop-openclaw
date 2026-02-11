@@ -1,0 +1,19 @@
+version: "3.5"
+services:
+  mate-desktop-openclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UPSTREAM_VERSION: 0.1.0
+    restart: unless-stopped
+    shm_size: '2gb'
+    volumes:
+      - mate-desktop-openclaw:/home/desktop
+    environment:
+      - VNC_PASSWORD=dappnode
+      - VNC_RESOLUTION=1280x720
+      - VNC_COL_DEPTH=24
+      - TZ=UTC
+volumes:
+  mate-desktop-openclaw: {}
